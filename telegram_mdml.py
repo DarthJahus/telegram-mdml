@@ -221,8 +221,8 @@ class HistoricalCollection:
         if with_dates:
             return max(with_dates, key=lambda v: v.date)
 
-        # Otherwise, return the first value without a date (preserves document order)
-        return without_dates[0] if without_dates else None
+        # Otherwise, return the last value without a date (preserves document order)
+        return without_dates[-1] if without_dates else None
 
     def oldest(self) -> Optional[HistoricalValue]:
         """Returns the oldest value."""
