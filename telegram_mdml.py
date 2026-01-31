@@ -224,10 +224,13 @@ class HistoricalCollection:
         # Otherwise, return the last value without a date (preserves document order)
         return without_dates[-1] if without_dates else None
 
-    def oldest(self) -> Optional[HistoricalValue]:
+    def oldest(self, allow_strikethrough: bool = False) -> Optional[HistoricalValue]:
         """Returns the oldest value."""
         if not self.values:
             return None
+
+        # Filter values based on strikethrough preference
+        candidates = self.values if allow_strikethrough else [v for v in self.values if not v.is_strikethrough]
 
         # Separate values with and without dates
         with_dates = [v for v in self.values if v.date is not None]
@@ -238,7 +241,7 @@ class HistoricalCollection:
             return min(with_dates, key=lambda v: v.date)
 
         # Otherwise, return the last value without a date (preserves document order)
-        return without_dates[-1] if without_dates else None
+        return without_dates[0] if without_dates else None
 
     def active(self) -> List[HistoricalValue]:
         """Returns all non-strikethrough values, sorted by date (most recent first)."""
