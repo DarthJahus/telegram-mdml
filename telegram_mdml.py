@@ -348,6 +348,13 @@ class TelegramEntity:
             raise TelegramMDMLError(f"Failed to parse content: {e}") from e
 
     # ========================================
+    # Frontmatter
+    # ========================================
+
+    def get_frontmatter_field(self, field_name) -> Optional[str]:
+        return self.doc.frontmatter.get(field_name, None)
+
+    # ========================================
     # SIMPLE FIELDS
     # ========================================
 
@@ -383,11 +390,18 @@ class TelegramEntity:
             InvalidTypeError: If type is not valid
             MissingFieldError: If type field is missing
         """
-        value = self.doc.get_value('type')
-        if not value:
-            raise MissingFieldError("Field 'type' is required")
 
-        entity_type = value.value.strip('`').strip().lower()
+        # try frontmatter first
+        value = self.get_frontmatter_field('type')
+
+        if not value:
+            # fallback to MDML field
+            value = self.doc.get_value('type')
+            if not value:
+                raise MissingFieldError("Field 'type' is required")
+            entity_type = value.value.strip('`').strip().lower()
+        else:
+            entity_type = value.strip('`').strip().lower()
 
         if entity_type not in self.VALID_TYPES:
             raise InvalidTypeError(
