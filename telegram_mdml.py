@@ -528,6 +528,33 @@ class TelegramEntity:
         return self.get_invites().latest(allow_strikethrough)
 
     # ========================================
+    # SIZE
+    # ========================================
+
+    def get_size(self) -> int | None:
+        """
+        Get member count (from group) or subscriber count (from channels).
+        :return: size of the entity or None
+        """
+        count_obj = None
+        if self.has_field('subscribers'):
+            count_obj = self.doc.get_field('subscribers')
+        elif self.has_field('members'):
+            count_obj = self.doc.get_field('members')
+        if count_obj:
+            # Ignore strikethrough values
+            active = [v for v in count_obj.values if not v.is_strikethrough]
+            if not active:
+                return None
+            # If dated values exist, return the latest one (ignore undated)
+            dated = [v for v in active if v.date is not None]
+            if dated:
+                return int(max(dated, key=lambda v: v.datetime_obj).value)
+            # No dated values: return the last one (document order)
+            return int(active[-1].value)
+        return None
+
+    # ========================================
     # STATUS
     # ========================================
 
