@@ -13,6 +13,8 @@ from typing import Optional, List
 from dataclasses import dataclass
 from mdml import parse_document, Document
 
+from telegram_checker.utils.helpers import print_debug
+
 
 # ============================================
 # EXCEPTIONS
@@ -546,12 +548,20 @@ class TelegramEntity:
             active = [v for v in count_obj.values if not v.is_strikethrough]
             if not active:
                 return None
-            # If dated values exist, return the latest one (ignore undated)
-            dated = [v for v in active if v.date is not None]
-            if dated:
-                return int(max(dated, key=lambda v: v.datetime_obj).value)
-            # No dated values: return the last one (document order)
-            return int(active[-1].value)
+            try:
+                # If dated values exist, return the latest one (ignore undated)
+                dated = [v for v in active if v.date is not None]
+                if dated:
+                    return int(max(dated, key=lambda v: v.datetime_obj).value)
+                # No dated values: return the last one (document order)
+                return int(active[-1].value)
+            except ValueError as e:
+                print_debug(e, 'TelegramEntity.get_size(): Sorting by date or converting value to int')
+                return None
+            except Exception as e:
+                print_debug(e, 'Unexpected in TelegramEntity.get_size()')
+                return None
+                
         return None
 
     # ========================================
