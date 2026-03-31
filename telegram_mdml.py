@@ -623,6 +623,38 @@ class TelegramEntity:
         return self.get_statuses().latest(allow_strikethrough)
 
     # ========================================
+    # ANY FIELD
+    # ========================================
+
+    def get_field(self, field_name: str) -> HistoricalCollection:
+        """
+        Get all FieldValue objects for a given field.
+
+        Returns:
+            HistoricalCollection (sorted by date, most recent first)
+        """
+        field = self.doc.get_field(field_name)
+        if not field:
+            return HistoricalCollection([])
+        return HistoricalCollection([
+            HistoricalValue(
+                value=fv.value,
+                date=fv.datetime_obj,
+                details=fv.details,
+                is_strikethrough=fv.is_strikethrough
+            )
+            for fv in field.values
+        ])
+
+
+    def get_field_last(self, field_name: str, allow_strikethrough: bool = False):
+        """
+        Get the most recent FieldValue for a given field.
+        Returns None if not found.
+        """
+        return self.get_field(field_name).latest(allow_strikethrough)
+
+    # ========================================
     # VALIDATION
     # ========================================
 
