@@ -9,7 +9,7 @@ Provides structured access to Telegram entity data stored in markdown files.
 import re
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, TypeVar, Generic, Iterator
 from dataclasses import dataclass
 from mdml import parse_document, Document
 
@@ -182,10 +182,12 @@ class StatusValue(HistoricalValue):
 # HISTORICAL COLLECTIONS
 # ============================================
 
-class HistoricalCollection:
+T = TypeVar("T", bound=HistoricalValue)
+
+class HistoricalCollection(Generic[T]):
     """Base class for managing historical values."""
 
-    def __init__(self, values: List[HistoricalValue]):
+    def __init__(self, values: List[T]):
         # Sort by date (most recent first), None dates go last
         self.values = sorted(
             values,
@@ -193,19 +195,19 @@ class HistoricalCollection:
             reverse=True
         )
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[T]:
         return iter(self.values)
 
     def __len__(self):
         return len(self.values)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index) -> T:
         return self.values[index]
 
     def __bool__(self):
         return len(self.values) > 0
 
-    def latest(self, allow_strikethrough: bool = False) -> Optional[HistoricalValue]:
+    def latest(self, allow_strikethrough: bool = False) -> Optional[T]:
         if not self.values:
             return None
 
@@ -226,7 +228,7 @@ class HistoricalCollection:
         # Otherwise, return the last value without a date (preserves document order)
         return without_dates[-1] if without_dates else None
 
-    def oldest(self, allow_strikethrough: bool = False) -> Optional[HistoricalValue]:
+    def oldest(self, allow_strikethrough: bool = False) -> Optional[T]:
         """Returns the oldest value."""
         if not self.values:
             return None
@@ -245,7 +247,7 @@ class HistoricalCollection:
         # Otherwise, return the last value without a date (preserves document order)
         return without_dates[0] if without_dates else None
 
-    def active(self) -> List[HistoricalValue]:
+    def active(self) -> List[T]:
         """Returns all non-strikethrough values, sorted by date (most recent first)."""
         active_values = [v for v in self.values if not v.is_strikethrough]
 
@@ -257,12 +259,12 @@ class HistoricalCollection:
         )
 
 
-class UsernameCollection(HistoricalCollection):
+class UsernameCollection(HistoricalCollection[UsernameValue]):
     """Collection of username values."""
     pass
 
 
-class InviteCollection(HistoricalCollection):
+class InviteCollection(HistoricalCollection[InviteValue]):
     """Collection of invite values."""
 
     def get_hashes(self, allow_strikethrough: bool = False) -> List[str]:
@@ -271,7 +273,7 @@ class InviteCollection(HistoricalCollection):
         return [v.hash for v in values]
 
 
-class StatusCollection(HistoricalCollection):
+class StatusCollection(HistoricalCollection[StatusValue]):
     """Collection of status values."""
 
     def has_status(self, status: str) -> bool:
@@ -647,7 +649,7 @@ class TelegramEntity:
         ])
 
 
-    def get_field_last(self, field_name: str, allow_strikethrough: bool = False):
+    def get_field_last(self, field_name: str, allow_strikethrough: bool = False) -> HistoricalValue or None:
         """
         Get the most recent FieldValue for a given field.
         Returns None if not found.
